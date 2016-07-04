@@ -50,10 +50,7 @@ bool APDS9250::begin() {
 }
 
 bool APDS9250::reset() {
-  Wire.beginTransmission(this->addr);
-  Wire.write(APDS9250_REG_MAIN_CTRL);
-  Wire.write(APDS9250_CTRL_SW_RESET);
-  return (Wire.endTransmission() != 0);
+  return this->write8(APDS9250_REG_MAIN_CTRL, APDS9250_CTRL_SW_RESET);
 }
 
 /*
@@ -61,10 +58,7 @@ bool APDS9250::reset() {
  * active.
  */
 bool APDS9250::enable() {
-  Wire.beginTransmission(this->addr);
-  Wire.write(APDS9250_REG_MAIN_CTRL);
-  Wire.write(APDS9250_CTRL_LS_EN);
-  return (Wire.endTransmission() != 0);
+  return this->write8(APDS9250_REG_MAIN_CTRL, APDS9250_CTRL_LS_EN);
 }
 
 /*
@@ -79,6 +73,8 @@ apds9250_chan_t APDS9250::getMode() {
 
   Wire.requestFrom(this->addr, 1, true);
   temp = Wire.read();
+
+  temp = this->read8(APDS9250_REG_MAIN_CTRL);
 
   if (temp & APDS9250_CTRL_CS_MODE_RGB) {
     this->mode = APDS9250_CHAN_RGB;
@@ -297,4 +293,48 @@ uint32_t APDS9250::getRawIRData() {
  */
 uint32_t APDS9250::getRawALSData() {
   return this->raw_als;
+}
+
+/*
+ * Write a byte to a register over i2c. Returns true if successful.
+ */
+bool APDS9250::write8(uint8_t reg, uint8_t val) {
+  Wire.beginTransmission(this->addr);
+  Wire.write(reg);
+  Wire.write(val);
+  return (Wire.endTransmission() == 0);
+}
+
+/*
+ * Read a byte over I2C from the given register
+ */
+uint8_t APDS9250::read8(uint8_t reg) {
+  uint8_t temp;
+
+  Wire.beginTransmission(this->addr);
+  Wire.write(reg);
+  Wire.endTransmission(false);
+
+  Wire.requestFrom(this->addr, 1, true);
+  temp = Wire.read();
+
+  return temp;
+}
+
+/*
+ * Read 3 bytes over I2C from the given register, and repack into a 32 bit int and return.
+ */
+uint32_t APDS9250::read24(uint8_t reg) {
+  uint8_t lsb, isb, msb;
+
+  Wire.beginTransmission(this->addr);
+  Wire.write(reg);
+  Wire.endTransmission(false);
+
+  Wire.requestFrom(this->addr, 3, true);
+  lsb = Wire.read();
+  isb = Wire.read();
+  msb = Wire.read();
+
+  return (msb << 16) | (isb << 8) | lsb;
 }

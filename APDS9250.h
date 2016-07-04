@@ -154,6 +154,10 @@ class APDS9250 {
       uint32_t raw_als;
       uint32_t raw_ir;
 
+      bool write8(uint8_t reg, uint8_t val);
+      uint8_t read8(uint8_t reg);
+      uint32_t read24(uint8_t reg);
+
 };
 
 #endif
