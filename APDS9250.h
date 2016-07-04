@@ -58,6 +58,7 @@
 #define APDS9250_CTRL_SW_RESET    (1 << 4) /* Trigger software reset */
 #define APDS9250_CTRL_CS_MODE_ALS (0 << 2) /* Channel Select 0 - ALS & IR mode (default) */
 #define APDS9250_CTRL_CS_MODE_RGB (1 << 2) /* Channel Select 1 - RGB & IR mode */
+#define APDS9250_CTRL_CS_MASK     (1 << 2) /* Channel Select mask */
 #define APDS9250_CTRL_LS_EN       (1 << 1) /* Light Sensor enabled */
 
 /* Sensor resolution, with minimum integration time */
@@ -79,6 +80,13 @@
 #define APDS9250_MEAS_RATE_2000MS (6 << 0) /* 2000ms integration time */
 #define APDS9250_MEAS_RATE_DUP    (7 << 0) /* 2000ms integration time (duplicate) */
 #define APDS9250_MEAS_RATE_MASK   (7 << 0) /* Mask for resolution bits */
+
+#define APDS9250_LS_GAIN_1X       (0 << 0) /* Gain 1x */
+#define APDS9250_LS_GAIN_3X       (1 << 0) /* Gain 3x */
+#define APDS9250_LS_GAIN_6X       (2 << 0) /* Gain 6x */
+#define APDS9250_LS_GAIN_9X       (3 << 0) /* Gain 9x */
+#define APDS9250_LS_GAIN_18X      (4 << 0) /* Gain 18x */
+#define APDS9250_LS_GAIN_MASK     (7 << 0) /* Gain mask */
 
 typedef enum apds9250_chan {
   APDS9250_CHAN_ALS = 0,
@@ -156,7 +164,17 @@ class APDS9250 {
 
       bool write8(uint8_t reg, uint8_t val);
       uint8_t read8(uint8_t reg);
-      uint32_t read24(uint8_t reg);
+      uint32_t read20(uint8_t reg);
+
+      apds9250_chan_t _modeFromReg(uint8_t reg_value);
+      apds9250_res_t _resFromReg(uint8_t reg_value);
+      apds9250_rate_t _measRateFromReg(uint8_t reg_value);
+      apds9250_gain_t _gainFromReg(uint8_t reg_value);
+
+      uint8_t _modeToReg(apds9250_chan_t newMode);
+      uint8_t _resToReg(apds9250_res_t newRes);
+      uint8_t _measRateToReg(apds9250_rate_t newMeasRate);
+      uint8_t _gainToReg(apds9250_gain_t newGain);
 
 };
 

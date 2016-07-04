@@ -33,9 +33,9 @@ APDS9250::APDS9250() {
  * able to find one.
  */
 bool APDS9250::begin() {
-  Wire.begin();
   
   // Send i2c "ping" to see if anything is on the bus at our address
+  Wire.begin();
   Wire.beginTransmission(this->addr);
   if (Wire.endTransmission() != 0) { // No reply or garbled transmission
     return false;
@@ -45,7 +45,7 @@ bool APDS9250::begin() {
   delayMicroseconds(50);
 
   // Enable sensor
-  this->enable();
+  return this->enable();
 
 }
 
@@ -65,23 +65,8 @@ bool APDS9250::enable() {
  * Get current sensor mode (basically, what's in the green register).
  */
 apds9250_chan_t APDS9250::getMode() {
-  uint8_t temp = 0;
-
-  Wire.beginTransmission(this->addr);
-  Wire.write(APDS9250_REG_MAIN_CTRL);
-  Wire.endTransmission(false);
-
-  Wire.requestFrom(this->addr, 1, true);
-  temp = Wire.read();
-
-  temp = this->read8(APDS9250_REG_MAIN_CTRL);
-
-  if (temp & APDS9250_CTRL_CS_MODE_RGB) {
-    this->mode = APDS9250_CHAN_RGB;
-  } else {
-    this->mode = APDS9250_CHAN_ALS;
-  }
-
+  uint8_t temp = this->read8(APDS9250_REG_MAIN_CTRL);
+  this->mode = this->_modeFromReg(temp);
   return this->mode;
 }
 
@@ -91,123 +76,9 @@ apds9250_chan_t APDS9250::getMode() {
  */
 apds9250_chan_t APDS9250::setMode(apds9250_chan_t newMode) {
   uint8_t temp = APDS9250_CTRL_LS_EN;
-
-  switch (newMode) {
-    case APDS9250_CHAN_ALS:
-      temp |= APDS9250_CTRL_CS_MODE_ALS; break;
-    case APDS9250_CHAN_RGB:
-      temp |= APDS9250_CTRL_CS_MODE_RGB; break;
-    default:
-      break;
-  }
-
-  Wire.beginTransmission(this->addr);
-  Wire.write(APDS9250_REG_MAIN_CTRL);
-  Wire.write(temp);
-  Wire.endTransmission();
-
+  temp |= this->_modeToReg(newMode);
+  this->write8(APDS9250_REG_MAIN_CTRL, temp);
   return this->getMode();
-}
-
-/*
- * Get LS_MEAS_RATE register values.
- */
-void APDS9250::_getMeasureRateReg() {
-  uint8_t temp = 0;
-
-  Wire.beginTransmission(this->addr);
-  Wire.write(APDS9250_REG_LS_MEAS_RATE);
-  Wire.endTransmission(false);
-
-  Wire.requestFrom(this->addr, 1, true);
-  temp = Wire.read();
-
-  switch (temp & APDS9250_RESOLUTION_MASK) {
-    case APDS9250_RESOLUTION_20BIT:
-      this->res = APDS9250_RES_20BIT; break;
-    case APDS9250_RESOLUTION_19BIT:
-      this->res = APDS9250_RES_19BIT; break;
-    case APDS9250_RESOLUTION_18BIT:
-      this->res = APDS9250_RES_18BIT; break;
-    case APDS9250_RESOLUTION_17BIT:
-      this->res = APDS9250_RES_17BIT; break;
-    case APDS9250_RESOLUTION_16BIT:
-      this->res = APDS9250_RES_16BIT; break;
-    case APDS9250_RESOLUTION_13BIT:
-      this->res = APDS9250_RES_13BIT; break;
-    default:
-      break;
-  }
-
-  switch (temp & APDS9250_MEAS_RATE_MASK) {
-    case APDS9250_MEAS_RATE_25MS:
-      this->meas_rate = APDS9250_RATE_25MS; break;
-    case APDS9250_MEAS_RATE_50MS:
-      this->meas_rate = APDS9250_RATE_50MS; break;
-    case APDS9250_MEAS_RATE_100MS:
-      this->meas_rate = APDS9250_RATE_100MS; break;
-    case APDS9250_MEAS_RATE_200MS:
-      this->meas_rate = APDS9250_RATE_200MS; break;
-    case APDS9250_MEAS_RATE_500MS:
-      this->meas_rate = APDS9250_RATE_500MS; break;
-    case APDS9250_MEAS_RATE_1000MS:
-      this->meas_rate = APDS9250_RATE_1000MS; break;
-    case APDS9250_MEAS_RATE_2000MS:
-      this->meas_rate = APDS9250_RATE_2000MS; break;
-    case APDS9250_MEAS_RATE_DUP:
-      this->meas_rate = APDS9250_RATE_2000MS; break;
-    default:
-      break;
-  }
-}
-
-/*
- * Set LS_MEAS_RATE register values.
- */
-void APDS9250::_setMeasureRateReg() {
-  uint8_t temp = 0;
-
-  switch (this->res) {
-    case APDS9250_RES_20BIT:
-      temp |= APDS9250_RESOLUTION_20BIT; break;
-    case APDS9250_RES_19BIT:
-      temp |= APDS9250_RESOLUTION_19BIT; break;
-    case APDS9250_RES_18BIT:
-      temp |= APDS9250_RESOLUTION_18BIT; break;
-    case APDS9250_RES_17BIT:
-      temp |= APDS9250_RESOLUTION_17BIT; break;
-    case APDS9250_RES_16BIT:
-      temp |= APDS9250_RESOLUTION_16BIT; break;
-    case APDS9250_RES_13BIT:
-      temp |= APDS9250_RESOLUTION_13BIT; break;
-    default:
-      break;
-  }
-
-
-  switch (this->meas_rate) {
-    case APDS9250_RATE_25MS:
-      temp |= APDS9250_MEAS_RATE_25MS; break;
-    case APDS9250_RATE_50MS:
-      temp |= APDS9250_MEAS_RATE_50MS; break;
-    case APDS9250_RATE_100MS:
-      temp |= APDS9250_MEAS_RATE_100MS; break;
-    case APDS9250_RATE_200MS:
-      temp |= APDS9250_MEAS_RATE_200MS; break;
-    case APDS9250_RATE_500MS:
-      temp |= APDS9250_MEAS_RATE_500MS; break;
-    case APDS9250_RATE_1000MS:
-      temp |= APDS9250_MEAS_RATE_1000MS; break;
-    case APDS9250_RATE_2000MS:
-      temp |= APDS9250_MEAS_RATE_2000MS; break;
-    default:
-      break;
-  }
-
-  Wire.beginTransmission(this->addr);
-  Wire.write(APDS9250_REG_LS_MEAS_RATE);
-  Wire.write(temp);
-  Wire.endTransmission();
 }
 
 /*
@@ -250,6 +121,8 @@ apds9250_rate_t APDS9250::setMeasRate(apds9250_rate_t newRate) {
  * Get ADC gain
  */
 apds9250_gain_t APDS9250::getGain() {
+  uint8_t temp = this->read8(APDS9250_REG_LS_GAIN);
+  this->gain = this->_gainFromReg(temp);
   return this->gain;
 }
 
@@ -257,6 +130,7 @@ apds9250_gain_t APDS9250::getGain() {
  * Set ADC gain
  */
 apds9250_gain_t APDS9250::setGain(apds9250_gain_t newGain) {
+  this->write8(APDS9250_REG_LS_GAIN, this->_gainToReg(newGain));
   return this->getGain();
 }
 
@@ -264,6 +138,7 @@ apds9250_gain_t APDS9250::setGain(apds9250_gain_t newGain) {
  * Get raw data from the red channel. TODO autoscale somehow?
  */
 uint32_t APDS9250::getRawRedData() {
+  this->raw_r = this->read20(APDS9250_REG_LS_DATA_RED_0);
   return this->raw_r;
 }
 
@@ -271,6 +146,7 @@ uint32_t APDS9250::getRawRedData() {
  * Get raw data from the green channel. TODO autoscale somehow?
  */
 uint32_t APDS9250::getRawGreenData() {
+  this->raw_g = this->read20(APDS9250_REG_LS_DATA_GREEN_0);
   return this->raw_g;
 }
 
@@ -278,6 +154,7 @@ uint32_t APDS9250::getRawGreenData() {
  * Get raw data from the blue channel. TODO autoscale somehow?
  */
 uint32_t APDS9250::getRawBlueData() {
+  this->raw_b = this->read20(APDS9250_REG_LS_DATA_BLUE_0);
   return this->raw_b;
 }
 
@@ -285,6 +162,7 @@ uint32_t APDS9250::getRawBlueData() {
  * Get raw data from the IR channel. TODO autoscale somehow?
  */
 uint32_t APDS9250::getRawIRData() {
+  this->raw_ir = this->read20(APDS9250_REG_LS_DATA_IR_0);
   return this->raw_ir;
 }
 
@@ -292,6 +170,7 @@ uint32_t APDS9250::getRawIRData() {
  * Get raw ALS data (theoretically plain ol lux) TODO autoscale?
  */
 uint32_t APDS9250::getRawALSData() {
+  this->raw_als = this->read20(APDS9250_REG_LS_DATA_GREEN_0);
   return this->raw_als;
 }
 
@@ -322,9 +201,9 @@ uint8_t APDS9250::read8(uint8_t reg) {
 }
 
 /*
- * Read 3 bytes over I2C from the given register, and repack into a 32 bit int and return.
+ * Read 20 bits bytes over I2C from the given register, and repack into a 32 bit int and return.
  */
-uint32_t APDS9250::read24(uint8_t reg) {
+uint32_t APDS9250::read20(uint8_t reg) {
   uint8_t lsb, isb, msb;
 
   Wire.beginTransmission(this->addr);
@@ -336,5 +215,174 @@ uint32_t APDS9250::read24(uint8_t reg) {
   isb = Wire.read();
   msb = Wire.read();
 
-  return (msb << 16) | (isb << 8) | lsb;
+  return ((msb & 7) << 16) | (isb << 8) | lsb;
+}
+
+/*
+ * Get LS_MEAS_RATE register values.
+ */
+void APDS9250::_getMeasureRateReg() {
+  uint8_t temp = this->read8(APDS9250_REG_LS_MEAS_RATE);
+  this->res = this->_resFromReg(temp);
+  this->meas_rate = this->_measRateFromReg(temp);
+}
+
+/*
+ * Set LS_MEAS_RATE register values.
+ */
+void APDS9250::_setMeasureRateReg() {
+  uint8_t temp = 0;
+  temp |= this->_resToReg(this->res);
+  temp |= this->_measRateToReg(this->meas_rate);
+  this->write8(APDS9250_REG_LS_MEAS_RATE, temp);
+}
+
+/*
+ * Convert register data to enum type for mode.
+ */
+apds9250_chan_t APDS9250::_modeFromReg(uint8_t reg_value) {
+  switch (reg_value & APDS9250_CTRL_CS_MASK) {
+    case APDS9250_CTRL_CS_MODE_RGB:
+      return APDS9250_CHAN_RGB;
+    case APDS9250_CTRL_CS_MODE_ALS:
+      return APDS9250_CHAN_ALS;
+    default:
+      return APDS9250_CHAN_ALS;
+  }
+}
+
+/*
+ * Convert register data to enum type for resolution.
+ */
+apds9250_res_t APDS9250::_resFromReg(uint8_t reg_value) {
+  switch (reg_value & APDS9250_RESOLUTION_MASK) {
+    case APDS9250_RESOLUTION_20BIT:
+      return APDS9250_RES_20BIT;
+    case APDS9250_RESOLUTION_19BIT:
+      return APDS9250_RES_19BIT;
+    case APDS9250_RESOLUTION_18BIT:
+      return APDS9250_RES_18BIT;
+    case APDS9250_RESOLUTION_17BIT:
+      return APDS9250_RES_17BIT;
+    case APDS9250_RESOLUTION_16BIT:
+      return APDS9250_RES_16BIT;
+    case APDS9250_RESOLUTION_13BIT:
+      return APDS9250_RES_13BIT;
+    default:
+      return APDS9250_RES_18BIT;
+  }
+}
+
+/*
+ * Convert register data to enum type for measurement rate.
+ */
+apds9250_rate_t APDS9250::_measRateFromReg(uint8_t reg_value) {
+  switch (reg_value & APDS9250_MEAS_RATE_MASK) {
+    case APDS9250_MEAS_RATE_25MS:
+      return APDS9250_RATE_25MS;
+    case APDS9250_MEAS_RATE_50MS:
+      return APDS9250_RATE_50MS;
+    case APDS9250_MEAS_RATE_100MS:
+      return APDS9250_RATE_100MS;
+    case APDS9250_MEAS_RATE_200MS:
+      return APDS9250_RATE_200MS;
+    case APDS9250_MEAS_RATE_500MS:
+      return APDS9250_RATE_500MS;
+    case APDS9250_MEAS_RATE_1000MS:
+      return APDS9250_RATE_1000MS;
+    case APDS9250_MEAS_RATE_2000MS:
+      return APDS9250_RATE_2000MS;
+    case APDS9250_MEAS_RATE_DUP:
+      return APDS9250_RATE_2000MS;
+    default:
+      return APDS9250_RATE_100MS;
+  }
+}
+
+/*
+ * Convert register data to enum type for gain.
+ */
+apds9250_gain_t APDS9250::_gainFromReg(uint8_t reg_value) {
+  switch (reg_value & APDS9250_LS_GAIN_MASK) {
+    case APDS9250_LS_GAIN_1X:
+      return APDS9250_GAIN_1X;
+    case APDS9250_LS_GAIN_3X:
+      return APDS9250_GAIN_3X;
+    case APDS9250_LS_GAIN_6X:
+      return APDS9250_GAIN_6X;
+    case APDS9250_LS_GAIN_9X:
+      return APDS9250_GAIN_9X;
+    case APDS9250_LS_GAIN_18X:
+      return APDS9250_GAIN_18X;
+    default:
+      return APDS9250_GAIN_3X;
+  }
+}
+
+uint8_t APDS9250::_resToReg(apds9250_res_t newRes) {
+  switch (newRes) {
+    case APDS9250_RES_20BIT:
+      return APDS9250_RESOLUTION_20BIT;
+    case APDS9250_RES_19BIT:
+      return APDS9250_RESOLUTION_19BIT;
+    case APDS9250_RES_18BIT:
+      return APDS9250_RESOLUTION_18BIT;
+    case APDS9250_RES_17BIT:
+      return APDS9250_RESOLUTION_17BIT;
+    case APDS9250_RES_16BIT:
+      return APDS9250_RESOLUTION_16BIT;
+    case APDS9250_RES_13BIT:
+      return APDS9250_RESOLUTION_13BIT;
+    default:
+      return APDS9250_RESOLUTION_18BIT;
+  }
+}
+
+uint8_t APDS9250::_measRateToReg(apds9250_rate_t newMeasRate) {
+  switch (newMeasRate) {
+    case APDS9250_RATE_25MS:
+      return APDS9250_MEAS_RATE_25MS;
+    case APDS9250_RATE_50MS:
+      return APDS9250_MEAS_RATE_50MS;
+    case APDS9250_RATE_100MS:
+      return APDS9250_MEAS_RATE_100MS;
+    case APDS9250_RATE_200MS:
+      return APDS9250_MEAS_RATE_200MS;
+    case APDS9250_RATE_500MS:
+      return APDS9250_MEAS_RATE_500MS;
+    case APDS9250_RATE_1000MS:
+      return APDS9250_MEAS_RATE_1000MS;
+    case APDS9250_RATE_2000MS:
+      return APDS9250_MEAS_RATE_2000MS;
+    default:
+      return APDS9250_MEAS_RATE_100MS;
+  }
+}
+
+uint8_t _modeToReg(apds9250_chan_t newMode) {
+  switch (newMode) {
+    case APDS9250_CHAN_ALS:
+      return APDS9250_CTRL_CS_MODE_ALS;
+    case APDS9250_CHAN_RGB:
+      return APDS9250_CTRL_CS_MODE_RGB;
+    default:
+      return APDS9250_CTRL_CS_MODE_ALS;
+  }
+}
+
+uint8_t _gainToReg(apds9250_gain_t newGain) {
+  switch (newGain) {
+    case APDS9250_GAIN_1X:
+      return APDS9250_LS_GAIN_1X;
+    case APDS9250_GAIN_3X:
+      return APDS9250_LS_GAIN_3X;
+    case APDS9250_GAIN_6X:
+      return APDS9250_LS_GAIN_6X;
+    case APDS9250_GAIN_9X:
+      return APDS9250_LS_GAIN_9X;
+    case APDS9250_GAIN_18X:
+      return APDS9250_LS_GAIN_18X;
+    default:
+      return APDS9250_LS_GAIN_3X;
+  }
 }
