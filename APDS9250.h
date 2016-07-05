@@ -137,6 +137,8 @@ class APDS9250 {
       apds9250_rate_t setMeasRate(apds9250_rate_t newRate);
       apds9250_gain_t getGain();
       apds9250_gain_t setGain(apds9250_gain_t newGain);
+      void setModeALS();
+      void setModeRGB();
 
       uint32_t getRawRedData();
       uint32_t getRawGreenData();

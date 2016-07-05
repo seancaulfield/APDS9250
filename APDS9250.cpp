@@ -82,6 +82,20 @@ apds9250_chan_t APDS9250::setMode(apds9250_chan_t newMode) {
 }
 
 /*
+ * Set sensing mode to Ambient Light Sensor (ALS) + IR.
+ */
+void APDS9250::setModeALS() {
+  this->setMode(APDS9250_CHAN_ALS);
+}
+
+/*
+ * Set sensing mode to RGB+IR.
+ */
+void APDS9250::setModeRGB() {
+  this->setMode(APDS9250_CHAN_RGB);
+}
+
+/*
  * Get ADC resolution bits.
  */
 apds9250_res_t APDS9250::getResolution() {
@@ -232,7 +246,7 @@ void APDS9250::_getMeasureRateReg() {
  */
 void APDS9250::_setMeasureRateReg() {
   uint8_t temp = 0;
-  temp |= this->_resToReg(this->res);
+  temp |= this->_resToReg(this->res) << 4;
   temp |= this->_measRateToReg(this->meas_rate);
   this->write8(APDS9250_REG_LS_MEAS_RATE, temp);
 }
@@ -359,7 +373,7 @@ uint8_t APDS9250::_measRateToReg(apds9250_rate_t newMeasRate) {
   }
 }
 
-uint8_t _modeToReg(apds9250_chan_t newMode) {
+uint8_t APDS9250::_modeToReg(apds9250_chan_t newMode) {
   switch (newMode) {
     case APDS9250_CHAN_ALS:
       return APDS9250_CTRL_CS_MODE_ALS;
@@ -370,7 +384,7 @@ uint8_t _modeToReg(apds9250_chan_t newMode) {
   }
 }
 
-uint8_t _gainToReg(apds9250_gain_t newGain) {
+uint8_t APDS9250::_gainToReg(apds9250_gain_t newGain) {
   switch (newGain) {
     case APDS9250_GAIN_1X:
       return APDS9250_LS_GAIN_1X;

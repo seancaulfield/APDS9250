@@ -15,7 +15,18 @@
 APDS9250 apds9250 = APDS9250();
 bool found = false;
 
+typedef struct sensor_data {
+  uint32_t r = 0;
+  uint32_t g = 0;
+  uint32_t b = 0;
+  uint32_t ir = 0;
+  uint32_t als = 0;
+} sensor_data_t;
+
+sensor_data_t curr, last;
+
 void setup() {
+  delay(1000);
   Serial.begin(115200);
   Wire.begin();
   if (!apds9250.begin()) {
@@ -27,5 +38,30 @@ void setup() {
 }
 
 void loop() {
+
+  if (found) {
+
+    Serial.print(F("Resolution ")); Serial.println((uint8_t)apds9250.getResolution(), BIN);
+    Serial.print(F("Meas Rate ")); Serial.println((uint8_t)apds9250.getMeasRate(), BIN);
+    Serial.print(F("Gain ")); Serial.println((uint8_t)apds9250.getGain(), BIN);
+
+    apds9250.setModeALS();
+    delay(500);
+    curr.als = apds9250.getRawALSData();
+    curr.ir = apds9250.getRawIRData();
+    Serial.print(F("ALS   ")); Serial.println(curr.als, HEX);
+    Serial.print(F("IR    ")); Serial.println(curr.ir, HEX);
+
+    apds9250.setModeRGB();
+    delay(500);
+    curr.r = apds9250.getRawRedData();
+    curr.g = apds9250.getRawGreenData();
+    curr.b = apds9250.getRawBlueData();
+    Serial.print(F("Red   ")); Serial.println(curr.r, HEX);
+    Serial.print(F("Green ")); Serial.println(curr.g, HEX);
+    Serial.print(F("Blue  ")); Serial.println(curr.b, HEX);
+
+  }
+
   delay(1000);
 }
