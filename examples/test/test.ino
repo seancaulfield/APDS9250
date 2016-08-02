@@ -26,8 +26,15 @@ typedef struct sensor_data {
 sensor_data_t curr, last;
 
 void setup() {
-  delay(1000);
+
+
+  pinMode(LED_BUILTIN, OUTPUT);
+
+  delay(200);
+  while (!Serial)
+    ;
   Serial.begin(115200);
+
   Wire.begin();
   if (!apds9250.begin()) {
     found = true;
@@ -35,6 +42,7 @@ void setup() {
   } else {
     Serial.println("APDS9250 not found! Check wiring?");
   }
+
 }
 
 void loop() {
@@ -63,5 +71,8 @@ void loop() {
 
   }
 
+  digitalWrite(LED_BUILTIN, LOW);
   delay(1000);
+  digitalWrite(LED_BUILTIN, HIGH);
+
 }

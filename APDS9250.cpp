@@ -229,7 +229,7 @@ uint32_t APDS9250::read20(uint8_t reg) {
   isb = Wire.read();
   msb = Wire.read();
 
-  return ((msb & 7) << 16) | (isb << 8) | lsb;
+  return (((uint32_t)(msb & 7)) << 16) | (((uint32_t)isb) << 8) | lsb;
 }
 
 /*
